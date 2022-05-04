@@ -8,9 +8,9 @@ jobs:
   lint:
     runs-on: windows-latest
     steps:
-    - run: tree "C:\Program Files\LLVM"
+    - run: tree /f "C:\Program Files\LLVM"
     - run: Remove-Item -Recurse "C:\Program Files\LLVM"
     - uses: KyleMayes/install-llvm-action@v1
       with:
         version: 13
-    - run: tree "C:\Program Files\LLVM"
+    - run: tree /f "C:\Program Files\LLVM"
