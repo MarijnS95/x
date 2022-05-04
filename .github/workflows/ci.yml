@@ -5,12 +5,28 @@ on:
 name: x
 
 jobs:
-  lint:
-    runs-on: windows-latest
+  ubuntu:
+    runs-on: ubuntu-latest
     steps:
-    - run: tree /f "C:\Program Files\LLVM"
-    - run: Remove-Item -Recurse "C:\Program Files\LLVM"
-    - uses: KyleMayes/install-llvm-action@v1
-      with:
-        version: 13
-    - run: tree /f "C:\Program Files\LLVM"
+    - run: ls /usr/bin/llvm*
+    - name: Make llvm-readobj-12 available
+      run: sudo ln -s llvm-readobj-12 /usr/bin/llvm-readobj
+    - run: |
+        which llvm-readelf || true
+        which llvm-readelf-12 || true
+        which llvm-readobj || true
+        which llvm-readobj-12 || true
+  macos:
+    runs-on: macos-latest
+    steps:
+    - run: ls /usr/bin/llvm*
+    - name: Make llvm-readobj-12 available
+      run: sudo ln -s llvm-readobj-12 /usr/bin/llvm-readobj
+    - run: |
+        which llvm-readelf || true
+        which llvm-readelf-12 || true
+        which llvm-readobj || true
+        which llvm-readobj-12 || true
+    - run: which lld || true
+    - run: which clang || true
+    - run: ls /usr/local/bin/llvm* || true
