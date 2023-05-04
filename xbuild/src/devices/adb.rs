@@ -177,14 +177,19 @@ impl Adb {
     fn pidof(&self, device: &str, id: &str) -> Result<u32> {
         loop {
             let output = self.shell(device, None).arg("pidof").arg(id).output()?;
-            anyhow::ensure!(
-                output.status.success(),
-                "failed to get pid: {}",
-                std::str::from_utf8(&output.stderr)?.trim()
-            );
+            if !output.status.success() {
+                let stderr = std::str::from_utf8(&output.stderr)?.trim();
+                if stderr.is_empty() {
+                    eprintln!("Failed to get pid, app not yet started?");
+                    std::thread::sleep(std::time::Duration::from_millis(100));
+                    continue;
+                } else {
+                    anyhow::bail!("failed to get pid: {}", stderr);
+                }
+            }
             let pid = std::str::from_utf8(&output.stdout)?.trim();
             // may return multiple space separated pids if the old process hasn't exited yet.
-            if pid.is_empty() || pid.split_once(' ').is_some() {
+            if pid.is_empty() || pid.contains(' ') {
                 std::thread::sleep(std::time::Duration::from_millis(100));
                 continue;
             }
