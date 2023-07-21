@@ -1,6 +1,6 @@
 use crate::devices::{Backend, Device};
 use crate::{Arch, Platform};
-use anyhow::Result;
+use anyhow::{Context, Result};
 use apk::Apk;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
@@ -11,8 +11,44 @@ use std::time::Duration;
 pub(crate) struct Adb(PathBuf);
 
 impl Adb {
-    pub fn which() -> Result<Self> {
-        Ok(Self(which::which(exe!("adb"))?))
+    pub fn which() -> Result<PathBuf> {
+        const ADB: &str = exe!("adb");
+
+        match which::which(ADB) {
+            Err(which::Error::CannotFindBinaryPath) => {
+                let sdk_path = {
+                    let sdk_path = std::env::var("ANDROID_SDK_ROOT").ok();
+                    if sdk_path.is_some() {
+                        eprintln!(
+                            "Warning: Environment variable ANDROID_SDK_ROOT is deprecated \
+                    (https://developer.android.com/studio/command-line/variables#envar). \
+                    It will be used until it is unset and replaced by ANDROID_HOME."
+                        );
+                    }
+
+                    PathBuf::from(
+                        sdk_path
+                            .or_else(|| std::env::var("ANDROID_HOME").ok())
+                            .context(
+                            "Cannot find `adb` on in PATH nor is ANDROID_HOME/ANDROID_SDK_ROOT set",
+                        )?,
+                    )
+                };
+
+                let adb_path = sdk_path.join("platform-tools").join(ADB);
+                anyhow::ensure!(
+                    adb_path.exists(),
+                    "Expected `adb` at `{}`",
+                    adb_path.display()
+                );
+                Ok(adb_path)
+            }
+            r => r.context("Could not find `adb` in PATH"),
+        }
+    }
+
+    pub fn new() -> Result<Self> {
+        Ok(Self(Self::which()?))
     }
 
     fn adb(&self, device: &str) -> Command {
@@ -178,11 +214,16 @@ impl Adb {
     fn pidof(&self, device: &str, id: &str) -> Result<u32> {
         loop {
             let output = self.shell(device, None).arg("pidof").arg(id).output()?;
-            anyhow::ensure!(
-                output.status.success(),
-                "failed to get pid: {}",
-                std::str::from_utf8(&output.stderr)?.trim()
-            );
+            if !output.status.success() {
+                let stderr = std::str::from_utf8(&output.stderr)?.trim();
+                if stderr.is_empty() {
+                    eprintln!("Failed to get pid, app not yet started?");
+                    std::thread::sleep(std::time::Duration::from_millis(100));
+                    continue;
+                } else {
+                    anyhow::bail!("failed to get pid: {}", stderr);
+                }
+            }
             let pid = std::str::from_utf8(&output.stdout)?.trim();
             // may return multiple space separated pids if the old process hasn't exited yet.
             if pid.is_empty() || pid.contains(' ') {
