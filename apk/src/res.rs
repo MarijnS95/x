@@ -20,6 +20,7 @@ pub enum ChunkType {
     TableType = 0x0201,
     TableTypeSpec = 0x0202,
     Unknown = 0x0206,
+    // Whatevs = 0x8b0a,
 }
 
 impl ChunkType {
@@ -1054,7 +1055,9 @@ impl Chunk {
                 Ok(Chunk::Unknown)
             }
             None => {
-                anyhow::bail!("unrecognized chunk {:?}", header);
+                tracing::warn!("unrecognized chunk {:?}, skipping", header);
+                r.seek(SeekFrom::Current(header.size as i64))?;
+                Ok(Chunk::Unknown)
             }
         }
     }

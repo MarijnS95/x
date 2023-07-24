@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use app_store_connect::certs_api::CertificateType;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
@@ -88,8 +88,8 @@ impl Commands {
             }
             Self::Run { args } => {
                 let env = BuildEnv::new(args)?;
-                command::build(&env)?;
-                command::run(&env)?;
+                command::build(&env).context("build")?;
+                command::run(&env).context("run")?;
             }
             Self::Lldb { args } => {
                 let env = BuildEnv::new(args)?;

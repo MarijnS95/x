@@ -125,8 +125,13 @@ impl Apk {
         crate::sign::verify(path)
     }
 
-    pub fn entry_point(path: &Path) -> Result<EntryPoint> {
-        let manifest = xcommon::extract_zip_file(path, "AndroidManifest.xml")?;
+    pub fn entry_point(path: &Path, is_aab: bool) -> Result<EntryPoint> {
+        let manifest_path = if is_aab {
+            "base/manifest/AndroidManifest.xml"
+        } else {
+            "AndroidManifest.xml"
+        };
+        let manifest = xcommon::extract_zip_file(path, manifest_path)?;
         let chunks = if let Chunk::Xml(chunks) = Chunk::parse(&mut Cursor::new(manifest))? {
             chunks
         } else {

@@ -1,6 +1,6 @@
 use crate::devices::{Backend, Device};
-use crate::{Arch, Platform};
-use anyhow::{Context, Result};
+use crate::{Arch, Format, Platform};
+use anyhow::{bail, Context, Result};
 use apk::Apk;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
@@ -112,13 +112,14 @@ impl Adb {
 
     fn install(&self, device: &str, path: &Path) -> Result<()> {
         let file_name = path.file_name().unwrap().to_str().unwrap();
-        self.push(device, path)?;
+        self.push(device, path).context("push")?;
         let status = self
             .shell(device, None)
             .arg("pm")
             .arg("install")
             .arg(format!("/data/local/tmp/{}", file_name))
-            .status()?;
+            .status()
+            .context("pm install")?;
         anyhow::ensure!(
             status.success(),
             "adb pm install exited with code {:?}",
@@ -138,7 +139,8 @@ impl Adb {
             .arg("android.intent.action.MAIN")
             .arg("-n")
             .arg(format!("{}/{}", package, activity))
-            .status()?;
+            .status()
+            .context("am start")?;
         anyhow::ensure!(
             status.success(),
             "adb shell am start exited with code {:?}",
@@ -333,8 +335,13 @@ impl Adb {
         Ok(())
     }
 
-    pub fn run(&self, device: &str, path: &Path, debug: bool) -> Result<()> {
-        let entry_point = Apk::entry_point(path)?;
+    pub fn run(&self, device: &str, path: &Path, format: Format, debug: bool) -> Result<()> {
+        let is_aab = match format {
+            Format::Aab => true,
+            Format::Apk => false,
+            x => bail!("{x:?} is not an Android package format"),
+        };
+        let entry_point = Apk::entry_point(path, is_aab)?;
         let package = &entry_point.package;
         let activity = &entry_point.activity;
         self.stop(device, package)?;
