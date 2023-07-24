@@ -351,7 +351,7 @@ impl ZipAlignmentOptions {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-#[serde(untagged)]
+#[serde(untagged, deny_unknown_fields)]
 pub enum AssetPath {
     Path(PathBuf),
     Extended {
@@ -390,6 +390,7 @@ impl AssetPath {
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct RawConfig {
     #[serde(flatten)]
     generic: Option<GenericConfig>,
@@ -401,6 +402,7 @@ struct RawConfig {
 }
 
 #[derive(Clone, Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct GenericConfig {
     icon: Option<PathBuf>,
     #[serde(default)]
@@ -408,6 +410,7 @@ pub struct GenericConfig {
 }
 
 #[derive(Clone, Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct AndroidConfig {
     #[serde(flatten)]
     generic: GenericConfig,
@@ -424,6 +427,7 @@ pub struct AndroidConfig {
 }
 
 #[derive(Clone, Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct IosConfig {
     #[serde(flatten)]
     generic: GenericConfig,
@@ -432,6 +436,7 @@ pub struct IosConfig {
 }
 
 #[derive(Clone, Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct MacosConfig {
     #[serde(flatten)]
     generic: GenericConfig,
@@ -439,12 +444,14 @@ pub struct MacosConfig {
 }
 
 #[derive(Clone, Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct LinuxConfig {
     #[serde(flatten)]
     generic: GenericConfig,
 }
 
 #[derive(Clone, Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct WindowsConfig {
     #[serde(flatten)]
     generic: GenericConfig,
