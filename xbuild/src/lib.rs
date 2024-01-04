@@ -472,6 +472,9 @@ impl BuildTargetArgs {
 
         let android_gradle = config.android().gradle.unwrap_or(format == Format::Aab);
 
+        // TODO: Assert on more valid combinations.
+        // I.e. Format::Msix <=> Platform::Windows <=> Store::Microsoft
+
         ensure!(
             // This fails if the format is Aab while `gradle == Some(false)`
             format != Format::Aab || android_gradle,
